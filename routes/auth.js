@@ -4,6 +4,13 @@ import { check } from 'express-validator';
 import auth from '../middleware/auth.js';
 import * as authController from '../controllers/authController.js';
 
+// @route   GET api/auth/status
+// @desc    Simple endpoint to check if API is available
+// @access  Public
+router.get('/status', (req, res) => {
+  res.json({ status: 'ok', message: 'API is available' });
+});
+
 // @route   POST api/auth/register
 // @desc    Register user
 // @access  Public

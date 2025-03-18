@@ -27,6 +27,30 @@ let poolHealthy = true;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
+let reconnectTimer = null;
+
+/**
+ * Initialize the database connection and verify connectivity
+ * @returns {Promise<boolean>} - Whether the database is successfully initialized
+ */
+const initializeDatabase = async () => {
+  try {
+    // Test the database connection
+    const client = await pool.connect();
+    console.log('✅ Database connection established successfully');
+    client.release();
+    poolHealthy = true;
+    reconnectAttempts = 0;
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to initialize database connection:', error.message);
+    poolHealthy = false;
+    
+    // Attempt reconnection immediately on startup failure
+    attemptReconnection();
+    return false;
+  }
+};
 
 // Connection event handlers
 pool.on('connect', () => {
@@ -47,71 +71,113 @@ pool.on('error', (err) => {
   if (
     err.code === 'PROTOCOL_CONNECTION_LOST' || 
     err.code === 'ECONNRESET' || 
-    err.code === '57P01' // admin shutdown
+    err.code === '57P01' || // admin shutdown
+    err.code === 'ECONNREFUSED'
   ) {
-    attemptReconnection();
+    // Avoid multiple simultaneous reconnection attempts
+    if (!reconnectTimer) {
+      attemptReconnection();
+    }
   }
 });
 
 // Attempt to reconnect with exponential backoff
 function attemptReconnection() {
+  // Clear any existing timer to prevent overlapping attempts
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  
   if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
     console.error(`Failed to reconnect to the database after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+    console.error('Further reconnection attempts will not be made automatically');
+    console.error('Please check database connectivity and restart the application');
     return;
   }
   
   reconnectAttempts++;
   const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1);
   
-  console.log(`Attempting to reconnect to the database in ${delay}ms (attempt ${reconnectAttempts})`);
+  console.log(`Attempting to reconnect to the database in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
   
-  setTimeout(() => {
+  // Store the timer reference to avoid multiple reconnection attempts
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    
     try {
-      // Drain and end the existing pool
-      pool.end().catch(err => {
-        console.error('Error ending pool during reconnection:', err);
-      });
+      // End the existing pool gracefully
+      console.log('Ending current connection pool...');
       
-      // Create a new pool
-      pool = new Pool(poolConfig);
-      
-      // Set up new event handlers
-      pool.on('connect', () => {
-        console.log('Database connection re-established');
-        poolHealthy = true;
-        reconnectAttempts = 0;
-      });
-      
-      pool.on('error', (err) => {
-        console.error('Database error after reconnection:', err);
-        poolHealthy = false;
-        
-        if (
-          err.code === 'PROTOCOL_CONNECTION_LOST' || 
-          err.code === 'ECONNRESET' || 
-          err.code === '57P01' // admin shutdown
-        ) {
-          attemptReconnection();
-        }
-      });
-      
-      // Test the new pool
-      pool.query('SELECT 1')
+      pool.end()
         .then(() => {
-          console.log('Successfully reconnected to database');
-          poolHealthy = true;
+          console.log('Successfully ended previous connection pool');
+          createNewPool();
         })
         .catch(err => {
-          console.error('Failed to verify reconnection:', err);
-          poolHealthy = false;
-          attemptReconnection();
+          console.error('Error ending pool during reconnection:', err);
+          // Still try to create a new pool
+          createNewPool();
         });
     } catch (err) {
-      console.error('Error recreating pool during reconnection:', err);
-      poolHealthy = false;
+      console.error('Error during reconnection process:', err);
+      // Schedule another attempt
       attemptReconnection();
     }
   }, delay);
+}
+
+// Create a new database connection pool
+function createNewPool() {
+  try {
+    console.log('Creating new connection pool...');
+    
+    // Create a new pool
+    pool = new Pool(poolConfig);
+    
+    // Set up new event handlers
+    pool.on('connect', () => {
+      console.log('Database connection re-established');
+      poolHealthy = true;
+      reconnectAttempts = 0;
+    });
+    
+    pool.on('error', (err) => {
+      console.error('Database error after reconnection:', err);
+      poolHealthy = false;
+      
+      if (
+        err.code === 'PROTOCOL_CONNECTION_LOST' || 
+        err.code === 'ECONNRESET' || 
+        err.code === '57P01' || // admin shutdown
+        err.code === 'ECONNREFUSED'
+      ) {
+        // Only attempt reconnection if we're not already doing so
+        if (!reconnectTimer) {
+          attemptReconnection();
+        }
+      }
+    });
+    
+    // Test the new pool
+    console.log('Testing new connection pool...');
+    pool.query('SELECT 1')
+      .then(() => {
+        console.log('Successfully reconnected to database');
+        poolHealthy = true;
+        reconnectAttempts = 0;
+      })
+      .catch(err => {
+        console.error('Failed to verify reconnection:', err);
+        poolHealthy = false;
+        // Attempt another reconnection
+        attemptReconnection();
+      });
+  } catch (err) {
+    console.error('Error recreating pool during reconnection:', err);
+    poolHealthy = false;
+    attemptReconnection();
+  }
 }
 
 // Helper function for database queries with enhanced error handling and retry logic
@@ -154,7 +220,7 @@ const query = async (text, params, retryCount = 0) => {
       if (client) client.release(true);
       
       // Attempt reconnection if pool is unhealthy
-      if (!poolHealthy) {
+      if (!poolHealthy && !reconnectTimer) {
         attemptReconnection();
       }
       
@@ -227,5 +293,6 @@ const checkHealth = async () => {
 export {
   pool,
   query,
-  checkHealth
+  checkHealth,
+  initializeDatabase
 };

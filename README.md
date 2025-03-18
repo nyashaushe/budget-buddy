@@ -95,6 +95,88 @@ A full-stack budget tracking application built with Node.js, Express, PostgreSQL
    npm run dev-full
    ```
 
+## Environment Variables
+
+### Backend Environment Variables (.env in root directory)
+
+The backend server requires the following environment variables:
+
+```
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+SERVE_CLIENT=true
+
+# Database Configuration
+# You can use either DATABASE_URL or individual parameters
+# DATABASE_URL takes precedence if both are provided
+# DATABASE_URL=postgresql://username:password@localhost:5432/BudgetBuddy
+
+# Individual database parameters
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=BudgetBuddy
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key_change_this_in_production
+JWT_EXPIRES_IN=24h
+```
+
+### Frontend Environment Variables (.env in frontend directory)
+
+The frontend application uses these environment variables:
+
+```
+# API Configuration
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_API_TIMEOUT=30000
+REACT_APP_API_MOCK=false
+
+# GitHub Pages Configuration
+REACT_APP_GITHUB_API_URL=https://your-backend-api.com
+REACT_APP_GITHUB_USE_MOCK=true
+REACT_APP_GITHUB_DEMO_MODE=true
+
+# Feature Flags
+REACT_APP_ENABLE_ANALYTICS=false
+REACT_APP_ENABLE_ERROR_REPORTING=true
+
+# Auth Configuration
+REACT_APP_AUTH_STORAGE_KEY=budget_buddy_auth
+REACT_APP_SESSION_TIMEOUT=3600000
+
+# Development Server
+PORT=3001
+```
+
+## GitHub Pages Deployment
+
+This application is configured for deployment to GitHub Pages. The configuration automatically detects when the app is running on GitHub Pages and adjusts settings accordingly.
+
+### GitHub Pages Configuration
+
+When running on GitHub Pages:
+
+1. The app will use the `REACT_APP_GITHUB_API_URL` as the backend API URL
+2. If no backend is available, it will run in mock mode (`REACT_APP_GITHUB_USE_MOCK=true`)
+3. Demo mode is enabled by default to show sample data
+
+### Testing GitHub Pages Locally
+
+To test GitHub Pages configuration locally:
+
+1. Add `?gh-pages=true` to your local development URL (e.g., `http://localhost:3001?gh-pages=true`)
+2. This will simulate GitHub Pages environment with mock data and demo mode
+
+### Deploying to GitHub Pages
+
+To deploy the application to GitHub Pages:
+
+1. Update the `BASE_URL` in `frontend/src/config.js` to match your GitHub repository name
+2. Run the deploy script: `npm run deploy-gh-pages` or use the `deploy-gh-pages.bat` script on Windows
+
 ## API Endpoints
 
 ### Authentication
@@ -136,55 +218,3 @@ A full-stack budget tracking application built with Node.js, Express, PostgreSQL
 ## License
 
 MIT 
-
-## GitHub Pages Deployment
-
-The frontend of this application is configured for deployment to GitHub Pages, which allows you to showcase the application's UI and functionality without needing to set up a backend server.
-
-### Demo Mode
-
-When deployed to GitHub Pages, the application automatically runs in "demo mode", which:
-
-- Uses mock data instead of making real API calls
-- Provides a simulated login/registration experience
-- Demonstrates all UI features without a backend
-
-### Deployment Steps
-
-1. Update the `homepage` field in `frontend/package.json` with your GitHub username:
-   ```json
-   "homepage": "https://YOUR_GITHUB_USERNAME.github.io/budget-buddy"
-   ```
-
-2. Deploy manually from your local machine:
-   ```
-   cd frontend
-   npm run deploy
-   ```
-   This builds the application and pushes it to the `gh-pages` branch of your repository.
-
-3. Alternatively, push to the `main` branch to trigger the GitHub Actions workflow:
-   ```
-   git push origin main
-   ```
-   The workflow will automatically build and deploy the application.
-
-4. Your application will be available at:
-   ```
-   https://YOUR_GITHUB_USERNAME.github.io/budget-buddy
-   ```
-
-### Customizing the Demo
-
-You can customize the demo data by modifying the mock data provider:
-- Edit `frontend/src/utils/mockDataProvider.js` to add or modify the sample data
-- The changes will be reflected in the GitHub Pages demo
-
-### Running Locally in Demo Mode
-
-To test the GitHub Pages version locally:
-```
-cd frontend
-npm start
-```
-Then add `?demo=true` to the URL, e.g., `http://localhost:3000?demo=true` 
