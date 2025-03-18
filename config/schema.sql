@@ -1,0 +1,67 @@
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  icon VARCHAR(50),
+  color VARCHAR(20),
+  is_default BOOLEAN DEFAULT false,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Expenses table
+CREATE TABLE IF NOT EXISTS expenses (
+  id SERIAL PRIMARY KEY,
+  amount DECIMAL(10, 2) NOT NULL,
+  description TEXT,
+  date DATE NOT NULL,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Budgets table
+CREATE TABLE IF NOT EXISTS budgets (
+  id SERIAL PRIMARY KEY,
+  amount DECIMAL(10, 2) NOT NULL,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  month INTEGER NOT NULL,
+  year INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Goals table
+CREATE TABLE IF NOT EXISTS goals (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  target_amount DECIMAL(10, 2) NOT NULL,
+  current_amount DECIMAL(10, 2) DEFAULT 0,
+  target_date DATE,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  is_completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bills table
+CREATE TABLE IF NOT EXISTS bills (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  amount DECIMAL(10, 2) NOT NULL,
+  due_date INTEGER NOT NULL,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  is_recurring BOOLEAN DEFAULT true,
+  is_paid BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+); 

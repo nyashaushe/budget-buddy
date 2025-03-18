@@ -1,0 +1,56 @@
+{
+  "name": "budget-buddy-mvc",
+  "version": "1.0.0",
+  "description": "A full-stack budget tracking application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "nodemon server.js",
+    "client": "cd frontend && npm start",
+    "dev": "nodemon server.js",
+    "dev-frontend": "cd frontend && npm start",
+    "dev-full": "concurrently \"npm run dev\" \"npm run dev-frontend\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-db": "node utils/testDbConnection.js",
+    "install-deps": "node scripts/install-dependencies.js",
+    "fix-tailwind": "node scripts/fix-tailwind.js",
+    "setup": "node scripts/setup.js",
+    "setup-db": "node utils/setupDb.js",
+    "init-db": "node utils/initializeDb.js",
+    "build": "cd frontend && npm run build",
+    "prepare-deploy": "npm run setup-db && npm run build",
+    "deploy": "NODE_ENV=production npm start",
+    "lint": "cd frontend && npm run lint"
+  },
+  "keywords": [
+    "budget",
+    "finance",
+    "expense",
+    "tracker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.14.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react": "^7.37.4",
+    "globals": "^16.0.0",
+    "nodemon": "^3.1.9",
+    "typescript-eslint": "^8.26.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
